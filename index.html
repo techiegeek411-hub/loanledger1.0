@@ -407,7 +407,7 @@ function renderHero() {
 
 function renderOverview() {
   const v = $("#v-overview");
-  if (!people.length) { v.innerHTML = `<div class="empty"><b>Your ledger is empty</b>Tap + to add the first person.</div>`; return; }
+  if (!people.length) { v.innerHTML = `<div class="empty"><b>Your ledger is empty</b>Tap + to add the first person,<br>or tap <b style="display:inline;color:var(--text)">⇅ Backup</b> at the top to restore your records.</div>`; return; }
   // donut
   const slices = people.filter(p => p.direction !== "owe").map(p => ({ p, v: personStats(p.id).remaining })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
   const total = slices.reduce((a, b) => a + b.v, 0);
@@ -876,7 +876,7 @@ const timer = setTimeout(() => { if (!(gotP && gotL)) stateMsg(`<b style="color:
   db.collection("people").onSnapshot(snap => { people = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); gotP = true; done(snap); renderAll(); }, onErr);
   db.collection("loans").onSnapshot(snap => { loans = snap.docs.map(d => ({ id: d.id, ...d.data(), txns: [...(d.data().txns || [])] })); gotL = true; done(snap); renderAll(); }, onErr);
   setTimeout(() => {
-    if (!people.length && !loans.length) { $("#stateBox").style.display = "none"; toast("Welcome! Restore a backup to bring in your records"); backupSheet(); return; }
+    if (!people.length && !loans.length) { $("#stateBox").style.display = "none"; return; }
     const lb = localStorage.getItem("ll.lastBackup");
     if (!lb || Date.now() - Date.parse(lb) > 14 * 864e5) toast("Tip: save a backup — it's been a while");
   }, 700);
