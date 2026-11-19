@@ -324,10 +324,19 @@ function fmt(n, cur) {
   n = r3(n || 0);
   const s = Number.isInteger(n) ? n.toLocaleString("en-US") : n.toLocaleString("en-US", {minimumFractionDigits: 3, maximumFractionDigits: 3});
   if (!cur || cur === "KWD") return s;
-  if (cur === "PHP") return "₱" + s;
-  if (cur === "USD") return "$" + s;
-  return s + " " + cur;
+  const sym = (CUR.find(c => c[0] === cur) || [])[1];
+  return sym ? sym + s : s + " " + cur;
 }
+const CUR = [
+ ["KWD","","Kuwaiti Dinar"],["SAR","","Saudi Riyal"],["AED","","UAE Dirham"],["QAR","","Qatari Riyal"],["BHD","","Bahraini Dinar"],["OMR","","Omani Rial"],
+ ["USD","$","US Dollar"],["EUR","€","Euro"],["GBP","£","British Pound"],["PHP","₱","Philippine Peso"],["INR","₹","Indian Rupee"],["PKR","","Pakistani Rupee"],
+ ["BDT","৳","Bangladeshi Taka"],["LKR","","Sri Lankan Rupee"],["NPR","","Nepalese Rupee"],["IDR","","Indonesian Rupiah"],["MYR","","Malaysian Ringgit"],["SGD","","Singapore Dollar"],
+ ["THB","฿","Thai Baht"],["VND","₫","Vietnamese Dong"],["CNY","","Chinese Yuan"],["JPY","¥","Japanese Yen"],["KRW","₩","South Korean Won"],["HKD","","Hong Kong Dollar"],
+ ["AUD","","Australian Dollar"],["NZD","","New Zealand Dollar"],["CAD","","Canadian Dollar"],["CHF","","Swiss Franc"],["SEK","","Swedish Krona"],["NOK","","Norwegian Krone"],
+ ["DKK","","Danish Krone"],["PLN","","Polish Zloty"],["TRY","₺","Turkish Lira"],["RUB","₽","Russian Ruble"],["EGP","","Egyptian Pound"],["JOD","","Jordanian Dinar"],
+ ["LBP","","Lebanese Pound"],["IQD","","Iraqi Dinar"],["MAD","","Moroccan Dirham"],["NGN","₦","Nigerian Naira"],["KES","","Kenyan Shilling"],["ETB","","Ethiopian Birr"],
+ ["ZAR","","South African Rand"],["BRL","","Brazilian Real"],["MXN","","Mexican Peso"]
+];
 const curLbl = c => c === "KWD" ? "KD" : c;
 function fdate(d) { if (!d) return "No date"; const [y,m,dd] = d.split("-"); return `${+dd} ${MONTHS[+m-1]} ${y}`; }
 function today() { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; }
@@ -390,15 +399,15 @@ function renderAll() {
 }
 
 function renderHero() {
-  let owed = 0, lent = 0, col = 0, owe = 0, php = 0, openN = 0, debtors = 0;
+  let owed = 0, lent = 0, col = 0, owe = 0, oth = {}, openN = 0, debtors = 0;
   for (const p of people) {
     const s = personStats(p.id);
     if (p.direction === "owe") { owe += s.remaining; continue; }
     owed += s.remaining; lent += s.given; col += s.paid; openN += s.open; if (s.remaining > 0) debtors++;
-    if (s.by.PHP) php += s.by.PHP.remaining;
+    for (const [k, v] of Object.entries(s.by)) if (k !== "KWD" && v.remaining > 0) oth[k] = (oth[k] || 0) + v.remaining;
   }
   countUp($("#hOwed"), r3(owed));
-  $("#hSub").innerHTML = `${debtors} ${debtors === 1 ? "person" : "people"} · ${openN} open loan${openN === 1 ? "" : "s"}${php ? ` · plus ${fmt(php,"PHP")}` : ""}`;
+  $("#hSub").innerHTML = `${debtors} ${debtors === 1 ? "person" : "people"} · ${openN} open loan${openN === 1 ? "" : "s"}${Object.keys(oth).length ? " · plus " + Object.entries(oth).map(([k, v]) => fmt(v, k)).join(" + ") : ""}`;
   $("#sCol").innerHTML = fmt(col) + "<small>KD</small>"; $("#sLent").innerHTML = fmt(lent) + "<small>KD</small>"; $("#sOwe").innerHTML = fmt(owe) + "<small>KD</small>";
   const pct = lent ? col / lent : 0;
   $("#hRing").innerHTML = ringSVG(pct, 96, 9, "var(--green)") + `<div class="lbl"><div><b>${Math.round(pct*100)}%</b>recovered</div></div>`;
@@ -687,7 +696,7 @@ function loanForm(l) {
     <div class="f"><label>Person</label><select name="personId" ${edit ? "disabled" : ""}>${opts}</select></div>
     <div class="f"><label>What is it for?</label><input name="title" required value="${esc(l.title || "")}" placeholder="e.g. Plane ticket, Car repair"></div>
     <div class="f2">${firstGiven ? `<div class="f"><label>Amount</label><input name="amount" type="number" step="0.001" min="0" inputmode="decimal" required placeholder="0.000"></div>` : ""}
-      <div class="f"><label>Currency</label><select name="currency">${["KWD", "PHP", "USD"].map(c => `<option ${((l.currency || "KWD") === c) ? "selected" : ""}>${c}</option>`).join("")}</select></div>
+      <div class="f"><label>Currency</label><select name="currency">${(CUR.some(c => c[0] === (l.currency || "KWD")) ? CUR : CUR.concat([[l.currency, "", l.currency]])).map(c => `<option value="${c[0]}" ${((l.currency || "KWD") === c[0]) ? "selected" : ""}>${c[0]} — ${c[2]}</option>`).join("")}</select></div>
       <div class="f" ${firstGiven ? 'style="grid-column:1/-1"' : ""}><label>Date</label><input name="date" type="date" value="${esc(l.date || (edit ? "" : today()))}"></div></div>
     <div class="f"><label>Note (optional)</label><textarea name="note" placeholder="Payment plan, promises…">${esc(l.note || "")}</textarea></div>
     ${edit && (l.txns || []).length ? `<div class="sec" style="margin-top:6px"><span>Entries · ${l.txns.length}</span></div>${[...l.txns].sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(t => entRow(l, t)).join("")}` : ""}
