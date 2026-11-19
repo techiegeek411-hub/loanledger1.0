@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="author" content="Samee Al Haque">
 <meta name="theme-color" content="#090c11">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -219,6 +220,7 @@ input,select,textarea{font:inherit;color:var(--text)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .banner{background:var(--amber-d);color:var(--amber);font-size:13px;padding:9px 12px;border-radius:12px;margin:12px 0 0}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.pcard{opacity:1}}
+.bt{display:flex;flex-direction:column;gap:2px;line-height:1.1}.bt small{font-size:11.5px;font-weight:600;text-transform:none;letter-spacing:.01em;color:var(--text);opacity:.72}
 .bk{margin-left:auto;padding:7px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--text);font-size:12px;font-weight:700;text-transform:none;letter-spacing:0}
 </style>
 </head>
@@ -226,7 +228,7 @@ input,select,textarea{font:inherit;color:var(--text)}
 
 <header class="hero">
   <div class="wrap">
-    <div class="brand"><span class="dot">د</span>Loan Ledger<button class="bk" id="bkBtn">⇅ Backup</button></div>
+    <div class="brand"><span class="dot">د</span><span class="bt">Loan Ledger<small>by Samee Al Haque</small></span><button class="bk" id="bkBtn">⇅ Backup</button></div>
     <div class="hero-row">
       <div>
         <div class="hero-label">Owed to you</div>
