@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#090c11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loan Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090c11; --bg2:#0e131a; --card:#121821; --card2:#171f2a; --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+  --text:#eef2f7; --muted:#8b97a8; --dim:#5d6878;
+  --green:#3ddc97; --green-d:rgba(61,220,151,.14);
+  --amber:#f6b94c; --amber-d:rgba(246,185,76,.14);
+  --rose:#ff7a8a; --rose-d:rgba(255,122,138,.14);
+  --blue:#7aa2ff; --blue-d:rgba(122,162,255,.14);
+  --r:18px; --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Plus Jakarta Sans",system-ui,sans-serif;font-size:15px;line-height:1.45}
+body{min-height:100vh;padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--text)}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:calc(22px + env(safe-area-inset-top)) 0 26px;
+  background:radial-gradient(120% 90% at 85% -10%,rgba(61,220,151,.22),transparent 55%),radial-gradient(90% 80% at -10% 0%,rgba(122,162,255,.18),transparent 55%),var(--bg)}
+.hero::after{content:"";position:absolute;inset:auto 0 0 0;height:1px;background:var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em;color:var(--muted);font-size:13px;text-transform:uppercase}
+.brand .dot{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--green),#1fa7a0);display:grid;place-items:center;color:#062018;font-weight:800;font-size:15px}
+.hero-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px}
+.hero-label{color:var(--muted);font-size:13px;font-weight:600}
+.hero-big{font-size:clamp(34px,9vw,48px);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-top:4px}
+.hero-big small{font-size:.42em;font-weight:700;color:var(--muted);margin-left:6px;letter-spacing:0}
+.hero-sub{color:var(--muted);font-size:13px;margin-top:6px}
+.ring{flex:none;position:relative;width:96px;height:96px}
+.ring svg{transform:rotate(-90deg)}
+.ring .lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-size:11px;color:var(--muted);line-height:1.15}
+.ring .lbl b{display:block;font-size:19px;color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:20px}
+.stat{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:14px;padding:11px 12px;backdrop-filter:blur(6px)}
+.stat .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.stat{min-width:0}.stat .v{font-size:clamp(13px,3.6vw,17px);overflow:hidden;text-overflow:ellipsis;font-weight:700;margin-top:2px;white-space:nowrap}
+.stat .v small{font-size:.7em;color:var(--muted);margin-left:3px}
+
+/* tabs */
+.tabs-bar{position:sticky;top:0;z-index:20;background:rgba(9,12,17,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:4px;padding:10px 0;position:relative}
+.tab{flex:1;padding:9px 0;border-radius:11px;font-weight:600;font-size:14px;color:var(--muted);transition:color .25s;position:relative;z-index:1}
+.tab.on{color:var(--text)}
+.tab-ind{position:absolute;top:10px;bottom:10px;border-radius:11px;background:var(--card2);border:1px solid var(--line2);transition:transform .35s var(--ease),width .35s var(--ease)}
+
+.view{display:none;padding-top:16px;animation:fade .35s var(--ease)}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card h3{margin:0 0 2px;font-size:15px;font-weight:700}
+.card .cap{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+
+/* donut */
+.donut-row{display:flex;gap:18px;align-items:center}
+.donut{flex:none;width:150px;height:150px;position:relative}
+.donut .mid{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-size:11px;color:var(--muted)}
+.donut .mid b{display:block;font-size:17px;color:var(--text)}
+.donut path{transition:opacity .2s}
+.legend{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.lg{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;font-size:13px;cursor:pointer;border-radius:8px;padding:2px 4px;margin:-2px -4px}
+.lg:hover{background:rgba(255,255,255,.04)}
+.lg i{width:10px;height:10px;border-radius:3px}
+.lg span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg b{font-weight:600}
+@media(max-width:480px){.donut-row{flex-direction:column;align-items:stretch}.donut{margin:0 auto}}
+
+/* bars */
+.bars{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:18px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;position:relative}
+.bar .b{width:100%;max-width:30px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--green),rgba(61,220,151,.35));transform-origin:bottom;transform:scaleY(0);transition:transform .8s var(--ease)}
+.bar .b.z{background:var(--line2);height:3px!important}
+.bar .m{font-size:10.5px;color:var(--dim)}
+.bar .t{position:absolute;top:-2px;font-size:10px;color:var(--muted);opacity:0;transition:opacity .2s}
+.bar:hover .t,.bar.peak .t{opacity:1}
+
+/* list rows */
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.av{flex:none;width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-weight:700;font-size:14px}
+.grow{flex:1;min-width:0}
+.t1{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t2{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amt{font-weight:700;text-align:right;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px}
+.c-amber{background:var(--amber-d);color:var(--amber)} .c-green{background:var(--green-d);color:var(--green)} .c-rose{background:var(--rose-d);color:var(--rose)} .c-blue{background:var(--blue-d);color:var(--blue)} .c-grey{background:rgba(255,255,255,.06);color:var(--muted)}
+
+/* people */
+.tools{display:flex;gap:8px;margin-bottom:12px}
+.search{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:0 12px}
+.search input{flex:1;background:none;border:0;outline:0;padding:11px 0}
+.filters{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fbtn{flex:none;padding:7px 13px;border-radius:999px;border:1px solid var(--line2);font-size:13px;font-weight:600;color:var(--muted);transition:all .2s}
+.fbtn.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.pcard{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;transition:transform .2s var(--ease),border-color .2s;opacity:0;animation:rise .45s var(--ease) forwards}
+.pcard:active{transform:scale(.985)}
+.pcard:hover{border-color:var(--line2)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.ptop{display:flex;align-items:center;gap:12px}
+.prog{height:7px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:12px}
+.prog i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#1fa7a0,var(--green));width:0;transition:width .9s var(--ease)}
+.pmeta{display:flex;justify-content:space-between;margin-top:7px;font-size:12px;color:var(--muted)}
+
+/* activity */
+.mhead{font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin:18px 2px 6px}
+.ico{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:16px}
+
+/* fab */
+.fab{position:fixed;right:max(18px,calc(50% - 362px));bottom:calc(22px + env(safe-area-inset-bottom));z-index:30;width:58px;height:58px;border-radius:19px;background:linear-gradient(135deg,var(--green),#1fa7a0);color:#04150f;font-size:28px;font-weight:500;box-shadow:0 12px 30px rgba(31,167,160,.35);display:grid;place-items:center;transition:transform .3s var(--ease)}
+.fab.open{transform:rotate(45deg)}
+.fmenu{position:fixed;right:max(18px,calc(50% - 362px));bottom:calc(92px + env(safe-area-inset-bottom));z-index:30;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.fmenu button{background:var(--card2);border:1px solid var(--line2);padding:11px 16px;border-radius:14px;font-weight:600;font-size:14px;display:flex;gap:9px;align-items:center;opacity:0;transform:translateY(10px) scale(.96);transition:all .25s var(--ease);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.fmenu.open{pointer-events:auto}
+.fmenu.open button{opacity:1;transform:none}
+.fmenu.open button:nth-child(3){transition-delay:.04s}.fmenu.open button:nth-child(2){transition-delay:.08s}.fmenu.open button:nth-child(1){transition-delay:.12s}
+
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .3s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:760px;margin:0 auto;background:var(--bg2);border:1px solid var(--line2);border-bottom:0;border-radius:24px 24px 0 0;transform:translateY(105%);transition:transform .42s var(--ease);max-height:92vh;display:flex;flex-direction:column}
+.sheet.on{transform:none}
+.sheet.tall{height:92vh}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line2);margin:10px auto 2px;flex:none}
+.sbody{overflow-y:auto;padding:8px 18px calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.shead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 14px}
+.shead h2{margin:0;font-size:19px;font-weight:700}
+.x{width:34px;height:34px;border-radius:11px;background:var(--card2);color:var(--muted);font-size:18px;display:grid;place-items:center}
+
+/* forms */
+.f{display:flex;flex-direction:column;gap:6px;margin-bottom:13px}
+.f label{font-size:12.5px;color:var(--muted);font-weight:600}
+.f input,.f select,.f textarea{background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:12px;outline:0;width:100%;transition:border-color .2s}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--green)}
+.f textarea{min-height:70px;resize:vertical}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:3px}
+.seg button{padding:9px;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.seg button.on{background:var(--card2);color:var(--text);box-shadow:0 0 0 1px var(--line2)}
+.btn{width:100%;padding:14px;border-radius:14px;font-weight:700;font-size:15px;background:var(--green);color:#04150f;transition:transform .15s,opacity .2s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line2)}
+.btn.danger{background:var(--rose-d);color:var(--rose)}
+.btns{display:flex;gap:8px}
+
+/* person detail */
+.pd-hero{background:linear-gradient(160deg,rgba(61,220,151,.12),rgba(122,162,255,.06) 60%,transparent),var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
+.pd-hero.owe{background:linear-gradient(160deg,rgba(255,122,138,.12),rgba(246,185,76,.05) 60%,transparent),var(--card)}
+.pd-big{font-size:32px;font-weight:800;letter-spacing:-.03em;margin-top:12px}
+.pd-big small{font-size:14px;color:var(--muted);font-weight:700;margin-left:5px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.mini>div{background:rgba(255,255,255,.04);border-radius:11px;padding:8px 10px}
+.mini .k{font-size:11px;color:var(--muted)} .mini .v{font-weight:700;font-size:14px}
+.note{font-size:13px;color:var(--muted);background:rgba(255,255,255,.035);border-left:3px solid var(--amber);border-radius:8px;padding:9px 11px;margin-top:12px}
+.acts{display:flex;gap:8px;margin:14px 0 4px}
+.acts .btn{padding:12px;font-size:14px}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 8px;font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.loan{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.loan.open{border-color:var(--line2)}
+.lhead{display:flex;gap:12px;align-items:center;padding:13px 14px;width:100%;text-align:left}
+.mring{flex:none}
+.lbody{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
+.loan.open .lbody{grid-template-rows:1fr}
+.lbody>div{overflow:hidden}
+.tl{padding:0 14px 6px 14px}
+.tli{display:flex;gap:11px;align-items:flex-start;position:relative;padding:7px 0 7px 2px}
+.tli::before{content:"";position:absolute;left:7px;top:22px;bottom:-8px;width:2px;background:var(--line)}
+.tli:last-child::before{display:none}
+.tli .d{flex:none;width:12px;height:12px;border-radius:50%;margin-top:4px;border:2px solid}
+.tli .d.g{border-color:var(--blue);background:var(--blue-d)} .tli .d.p{border-color:var(--green);background:var(--green)}
+.tli .del{color:var(--dim);font-size:16px;padding:0 4px;line-height:1}
+.lacts{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 14px;border-top:1px solid var(--line)}
+.lacts button{font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:10px;background:var(--card2);border:1px solid var(--line)}
+.lacts .pri{background:var(--green-d);color:var(--green);border-color:transparent}
+.lnote{font-size:12.5px;color:var(--muted);padding:0 14px 10px}
+
+.hold-hero{background:radial-gradient(120% 120% at 100% 0%,rgba(180,140,255,.22),transparent 60%),var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+.hold-hero .big{font-size:34px;font-weight:800;letter-spacing:-.03em;margin-top:4px}
+.hold-hero .big small{font-size:14px;color:var(--muted);margin-left:5px}
+.hcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;opacity:0;animation:rise .45s var(--ease) forwards}
+.hcard .bal{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.flow{display:flex;height:7px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.06);margin-top:12px}
+.flow i{display:block;height:100%;transition:width .9s var(--ease);width:0}
+.hbtns{display:flex;gap:8px;margin-top:12px}
+.hbtns button{flex:1;padding:10px;border-radius:12px;font-weight:600;font-size:13.5px}
+.hb-in{background:rgba(180,140,255,.16);color:#c9b0ff}
+.hb-out{background:var(--card2);border:1px solid var(--line2)}
+.ent{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px}
+.ent-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12.5px;font-weight:700}
+.ent-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ent input{background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:10px;outline:0;width:100%;font-size:14px}
+.ent input:focus{border-color:var(--green)}
+.ent .full{grid-column:1/-1}
+.tli .ed{color:var(--muted);font-size:14px;padding:0 4px;line-height:1}
+.empty{text-align:center;color:var(--muted);padding:40px 20px}
+.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:4px}
+.state{margin:60px auto;text-align:center;color:var(--muted);max-width:340px}
+.spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--line2);border-top-color:var(--green);margin:0 auto 14px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:all .3s var(--ease);z-index:60;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.banner{background:var(--amber-d);color:var(--amber);font-size:13px;padding:9px 12px;border-radius:12px;margin:12px 0 0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.pcard{opacity:1}}
+.bk{margin-left:auto;padding:7px 12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--text);font-size:12px;font-weight:700;text-transform:none;letter-spacing:0}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brand"><span class="dot">د</span>Loan Ledger<button class="bk" id="bkBtn">⇅ Backup</button></div>
+    <div class="hero-row">
+      <div>
+        <div class="hero-label">Owed to you</div>
+        <div class="hero-big num"><span id="hOwed">—</span><small>KD</small></div>
+        <div class="hero-sub" id="hSub">Loading your ledger…</div>
+      </div>
+      <div class="ring" id="hRing"></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Collected</div><div class="v num" id="sCol">—</div></div>
+      <div class="stat"><div class="k">Total lent</div><div class="v num" id="sLent">—</div></div>
+      <div class="stat" id="sOweBox" style="cursor:pointer"><div class="k">Kept for others</div><div class="v num" id="sOwe" style="color:#c9b0ff">—</div></div>
+    </div>
+    <div id="banner"></div>
+  </div>
+</header>
+
+<div class="tabs-bar"><div class="wrap"><div class="tabs" id="tabs">
+  <div class="tab-ind" id="tabInd"></div>
+  <button class="tab on" data-v="overview">Overview</button>
+  <button class="tab" data-v="people">People</button>
+  <button class="tab" data-v="held">Kept</button>
+  <button class="tab" data-v="activity">Activity</button>
+</div></div></div>
+
+<main class="wrap">
+  <div id="stateBox" class="state"><div class="spin"></div>Loading your ledger…</div>
+  <section class="view on" id="v-overview"></section>
+  <section class="view" id="v-people">
+    <div class="tools"><div class="search"><span style="color:var(--dim)">⌕</span><input id="q" placeholder="Search people or loans"></div></div>
+    <div class="filters" id="pf"></div>
+    <div id="plist"></div>
+  </section>
+  <section class="view" id="v-held"></section>
+  <section class="view" id="v-activity">
+    <div class="filters" id="af"></div>
+    <div id="alist"></div>
+  </section>
+</main>
+
+<div class="fmenu" id="fmenu">
+  <button data-a="keep">🔒 Keep money</button>
+  <button data-a="person">👤 New person</button>
+  <button data-a="loan">➕ New loan</button>
+  <button data-a="pay">💰 Record payment</button>
+</div>
+<button class="fab" id="fab" aria-label="Add">+</button>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet tall" id="pSheet"><div class="grab"></div><div class="sbody" id="pBody"></div></div>
+<div class="sheet" id="fSheet" style="z-index:43"><div class="grab"></div><div class="sbody" id="fBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- on-device storage (offline app) ---------- */
+const LOCAL_MODE = true;
+window.claude = { use: async n => {
+  if (n !== "db") return null;
+  const KEY = "ll.data.v1";
+  let store; try { store = JSON.parse(localStorage.getItem(KEY)) || null; } catch { store = null; }
+  if (!store) store = { people: {}, loans: {} };
+  const subs = { people: [], loans: [] };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { throw e; } };
+  const snap = c => { const docs = Object.entries(store[c]).map(([id, d]) => ({ id, exists: true, data: () => JSON.parse(JSON.stringify(d)) })); return { docs, size: docs.length, empty: !docs.length, metadata: { fromCache: false, hasPendingWrites: false }, docChanges: () => [] }; };
+  const emit = c => setTimeout(() => subs[c].forEach(f => f(snap(c))), 0);
+  window.addEventListener("storage", e => { if (e.key === KEY) { try { store = JSON.parse(e.newValue) || store; emit("people"); emit("loans"); } catch {} } });
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+  return { collection: c => ({
+    onSnapshot: f => { subs[c].push(f); emit(c); return () => { subs[c] = subs[c].filter(x => x !== f); }; },
+    doc: id => ({
+      set: async d => { store[c][id] = JSON.parse(JSON.stringify(d)); save(); emit(c); },
+      update: async d => { store[c][id] = { ...store[c][id], ...JSON.parse(JSON.stringify(d)) }; save(); emit(c); },
+      delete: async () => { delete store[c][id]; save(); emit(c); }
+    })
+  }) };
+} };
+
+</script>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const PALETTE = ["#3ddc97","#7aa2ff","#f6b94c","#ff7a8a","#b48cff","#4cc9f0","#ff9f5a","#e2e868","#5eead4","#f472b6","#a3e635","#94a3b8"];
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+let db = null, people = [], loans = [], gotP = false, gotL = false;
+let curPerson = null, openLoans = new Set(), pFilter = "owes", aFilter = "all";
+
+/* ---------- formatting ---------- */
+const r3 = n => Math.round(n * 1000) / 1000;
+function fmt(n, cur) {
+  n = r3(n || 0);
+  const s = Number.isInteger(n) ? n.toLocaleString("en-US") : n.toLocaleString("en-US", {minimumFractionDigits: 3, maximumFractionDigits: 3});
+  if (!cur || cur === "KWD") return s;
+  if (cur === "PHP") return "₱" + s;
+  if (cur === "USD") return "$" + s;
+  return s + " " + cur;
+}
+const curLbl = c => c === "KWD" ? "KD" : c;
+function fdate(d) { if (!d) return "No date"; const [y,m,dd] = d.split("-"); return `${+dd} ${MONTHS[+m-1]} ${y}`; }
+function today() { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; }
+function daysSince(d) { if (!d) return null; return Math.floor((Date.now() - new Date(d + "T00:00:00").getTime()) / 864e5); }
+function age(d) { const n = daysSince(d); if (n == null) return ""; if (n < 31) return n + "d"; if (n < 365) return Math.round(n/30.4) + " mo"; const y = n/365; return (Math.round(y*10)/10) + " yr"; }
+const uid = p => p + "-" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+function initials(n) { return n.replace(/\(.*?\)/g,"").split(/\s+/).filter(w => w && !/^(ate|aunty|uncle)$/i.test(w)).slice(0,2).map(w => w[0]).join("").toUpperCase() || n[0].toUpperCase(); }
+function colorFor(id) { const i = people.findIndex(p => p.id === id); return PALETTE[(i < 0 ? 0 : i) % PALETTE.length]; }
+
+/* ---------- maths ---------- */
+function loanStats(l) {
+  let given = 0, paid = 0;
+  for (const t of l.txns || []) { if (t.type === "given") given += +t.amount || 0; else paid += +t.amount || 0; }
+  const remaining = l.closed ? 0 : Math.max(0, r3(given - paid));
+  return { given: r3(given), paid: r3(paid), remaining, closed: l.closed || remaining <= 0.0005 };
+}
+function personStats(pid) {
+  const ls = loans.filter(l => l.personId === pid);
+  const by = {}; let open = 0;
+  for (const l of ls) {
+    const s = loanStats(l), c = l.currency || "KWD";
+    by[c] = by[c] || { given: 0, paid: 0, remaining: 0 };
+    by[c].given += s.given; by[c].paid += s.paid; by[c].remaining += s.remaining;
+    if (!s.closed) open++;
+  }
+  const k = by.KWD || { given: 0, paid: 0, remaining: 0 };
+  return { loans: ls, by, open, given: r3(k.given), paid: r3(Math.min(k.paid, k.given)), remaining: r3(k.remaining) };
+}
+const personById = id => people.find(p => p.id === id);
+const txnLabel = (dir, type) => dir === "owe" ? (type === "given" ? "Received to keep" : "Used / given back") : (type === "given" ? "Lent" : "Payment received");
+
+/* ---------- toast ---------- */
+let tt; function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 2200); }
+
+/* ---------- count-up ---------- */
+const lastVals = {};
+function countUp(el, to, dec) {
+  const from = lastVals[el.id] ?? 0; lastVals[el.id] = to;
+  if (matchMedia("(prefers-reduced-motion:reduce)").matches) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur = 900;
+  const step = now => { const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3); const v = from + (to - from) * e;
+    el.textContent = p < 1 ? Math.round(v).toLocaleString("en-US") : fmt(to); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+/* ---------- ring svg ---------- */
+function ringSVG(pct, size, stroke, color) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(1, pct)));
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}" data-off="${off}" style="transition:stroke-dashoffset 1.1s var(--ease)"/></svg>`;
+}
+function kickRings(root) { requestAnimationFrame(() => requestAnimationFrame(() => root.querySelectorAll("[data-off]").forEach(c => c.style.strokeDashoffset = c.dataset.off))); }
+function kickBars(root) { requestAnimationFrame(() => requestAnimationFrame(() => { root.querySelectorAll(".prog i[data-w]").forEach(i => i.style.width = i.dataset.w); root.querySelectorAll(".bar .b").forEach(b => b.style.transform = "scaleY(1)"); })); }
+
+/* ---------- render all ---------- */
+function renderAll() {
+  if (!(gotP && gotL)) return;
+  $("#stateBox").style.display = "none";
+  renderHero(); renderOverview(); renderPeople(); renderHeld(); renderActivity();
+  if (curPerson) { if (personById(curPerson)) renderPerson(); else closeSheet("p"); }
+}
+
+function renderHero() {
+  let owed = 0, lent = 0, col = 0, owe = 0, php = 0, openN = 0, debtors = 0;
+  for (const p of people) {
+    const s = personStats(p.id);
+    if (p.direction === "owe") { owe += s.remaining; continue; }
+    owed += s.remaining; lent += s.given; col += s.paid; openN += s.open; if (s.remaining > 0) debtors++;
+    if (s.by.PHP) php += s.by.PHP.remaining;
+  }
+  countUp($("#hOwed"), r3(owed));
+  $("#hSub").innerHTML = `${debtors} ${debtors === 1 ? "person" : "people"} · ${openN} open loan${openN === 1 ? "" : "s"}${php ? ` · plus ${fmt(php,"PHP")}` : ""}`;
+  $("#sCol").innerHTML = fmt(col) + "<small>KD</small>"; $("#sLent").innerHTML = fmt(lent) + "<small>KD</small>"; $("#sOwe").innerHTML = fmt(owe) + "<small>KD</small>";
+  const pct = lent ? col / lent : 0;
+  $("#hRing").innerHTML = ringSVG(pct, 96, 9, "var(--green)") + `<div class="lbl"><div><b>${Math.round(pct*100)}%</b>recovered</div></div>`;
+  kickRings($("#hRing"));
+}
+
+function renderOverview() {
+  const v = $("#v-overview");
+  if (!people.length) { v.innerHTML = `<div class="empty"><b>Your ledger is empty</b>Tap + to add the first person.</div>`; return; }
+  // donut
+  const slices = people.filter(p => p.direction !== "owe").map(p => ({ p, v: personStats(p.id).remaining })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+  const total = slices.reduce((a, b) => a + b.v, 0);
+  let donut = "";
+  if (total > 0) {
+    let a0 = -Math.PI / 2; const R = 70, rr = 50, cx = 75, cy = 75;
+    const arcs = slices.map(s => {
+      const ang = (s.v / total) * Math.PI * 2, a1 = a0 + ang, gap = slices.length > 1 ? 0.018 : 0;
+      const A = a0 + gap, B = a1 - gap, large = (B - A) > Math.PI ? 1 : 0;
+      const P = (r, a) => `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+      const d = slices.length === 1 ? `M${cx},${cy-R} A${R},${R} 0 1 1 ${cx-0.01},${cy-R} L${cx-0.01},${cy-rr} A${rr},${rr} 0 1 0 ${cx},${cy-rr}Z`
+        : `M${P(R,A)} A${R},${R} 0 ${large} 1 ${P(R,B)} L${P(rr,B)} A${rr},${rr} 0 ${large} 0 ${P(rr,A)}Z`;
+      a0 = a1; return `<path d="${d}" fill="${colorFor(s.p.id)}" data-pid="${s.p.id}"><title>${esc(s.p.name)}: ${fmt(s.v)} KD</title></path>`;
+    }).join("");
+    donut = `<div class="card"><h3>Who owes what</h3><div class="cap">Outstanding balance by person (KD)</div>
+      <div class="donut-row"><div class="donut"><svg viewBox="0 0 150 150" width="150" height="150" style="animation:spinIn .9s var(--ease)">${arcs}</svg>
+      <div class="mid"><div><b class="num">${fmt(Math.round(total))}</b>KD pending</div></div></div>
+      <div class="legend">${slices.map(s => `<div class="lg" data-pid="${s.p.id}"><i style="background:${colorFor(s.p.id)}"></i><span>${esc(s.p.name)}</span><b class="num">${fmt(s.v)}</b></div>`).join("")}</div></div></div>`;
+  } else donut = `<div class="card"><h3>All clear 🎉</h3><div class="cap" style="margin:0">Nobody owes you anything right now.</div></div>`;
+
+  // bars: collections last 12 months
+  const now = new Date(), months = [];
+  for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push({ key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`, m: MONTHS[d.getMonth()], v: 0 }); }
+  const ownersOwed = new Set(people.filter(p => p.direction !== "owe").map(p => p.id));
+  for (const l of loans) if (ownersOwed.has(l.personId) && (l.currency || "KWD") === "KWD") for (const t of l.txns || []) if (t.type === "paid" && t.date) { const mm = months.find(x => x.key === t.date.slice(0, 7)); if (mm) mm.v += +t.amount; }
+  const mx = Math.max(...months.map(m => m.v), 1), sum12 = months.reduce((a, b) => a + b.v, 0);
+  const peak = months.reduce((a, b) => b.v > a.v ? b : a, months[0]);
+  const bars = `<div class="card"><h3>Money coming back</h3><div class="cap">Payments received, last 12 months · <b class="num" style="color:var(--green)">${fmt(r3(sum12))} KD</b></div>
+    <div class="bars">${months.map((m, i) => `<div class="bar ${m === peak && m.v ? "peak" : ""}"><span class="t num">${m.v ? fmt(Math.round(m.v)) : ""}</span><div class="b ${m.v ? "" : "z"}" style="height:${m.v ? Math.max(6, m.v / mx * 100) : 0}%;transition-delay:${i * 40}ms"></div><span class="m">${m.m}</span></div>`).join("")}</div></div>`;
+
+  // waiting longest
+  const open = loans.filter(l => ownersOwed.has(l.personId)).map(l => ({ l, s: loanStats(l) })).filter(x => !x.s.closed)
+    .map(x => { const lastPay = (x.l.txns || []).filter(t => t.type === "paid" && t.date).map(t => t.date).sort().pop(); return { ...x, since: lastPay || x.l.date, lastPay }; })
+    .sort((a, b) => (a.since || "0000").localeCompare(b.since || "0000")).slice(0, 6);
+  const wait = open.length ? `<div class="card"><h3>Waiting the longest</h3><div class="cap">Open loans with the oldest last activity</div>
+    ${open.map(x => { const p = personById(x.l.personId); const d = daysSince(x.since); const cls = d == null ? "c-grey" : d > 365 ? "c-rose" : d > 120 ? "c-amber" : "c-blue";
+      return `<div class="row" data-pid="${p.id}" style="cursor:pointer"><div class="av" style="background:${colorFor(p.id)}22;color:${colorFor(p.id)}">${initials(p.name)}</div>
+      <div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${esc(x.l.title)} · ${x.lastPay ? "last paid " + fdate(x.lastPay) : "nothing paid yet"}</div></div>
+      <div style="text-align:right"><div class="amt num">${fmt(x.s.remaining, x.l.currency)}${x.l.currency === "KWD" || !x.l.currency ? " KD" : ""}</div><span class="chip ${cls}">${x.since ? age(x.since) : "no date"}</span></div></div>`; }).join("")}</div>` : "";
+
+  v.innerHTML = donut + bars + wait;
+  v.querySelectorAll("[data-pid]").forEach(el => el.addEventListener("click", () => openPerson(el.dataset.pid)));
+  kickBars(v);
+}
+const st = document.createElement("style"); st.textContent = "@keyframes spinIn{from{opacity:0;transform:rotate(-40deg) scale(.9)}to{opacity:1;transform:none}}"; document.head.appendChild(st);
+
+function renderPeople() {
+  const counts = { owes: 0, settled: 0, owe: 0, all: people.length };
+  const rows = people.map(p => ({ p, s: personStats(p.id) }));
+  rows.forEach(({ p, s }) => { if (p.direction === "owe") counts.owe++; else if (s.open) counts.owes++; else counts.settled++; });
+  const F = [["owes", "Owes me"], ["settled", "Settled"], ["owe", "Kept money"], ["all", "All"]];
+  $("#pf").innerHTML = F.map(([k, l]) => `<button class="fbtn ${pFilter === k ? "on" : ""}" data-f="${k}">${l} · ${counts[k]}</button>`).join("");
+  $("#pf").querySelectorAll("button").forEach(b => b.onclick = () => { pFilter = b.dataset.f; renderPeople(); });
+  const q = $("#q").value.trim().toLowerCase();
+  let list = rows.filter(({ p, s }) => pFilter === "all" || (pFilter === "owe" ? p.direction === "owe" : p.direction !== "owe" && (pFilter === "owes" ? s.open > 0 : s.open === 0)));
+  if (q) list = list.filter(({ p, s }) => p.name.toLowerCase().includes(q) || s.loans.some(l => (l.title || "").toLowerCase().includes(q)));
+  list.sort((a, b) => b.s.remaining - a.s.remaining || (a.p.order ?? 0) - (b.p.order ?? 0));
+  $("#plist").innerHTML = list.length ? list.map(({ p, s }, i) => {
+    const pct = s.given ? Math.min(1, s.paid / s.given) : 0, c = colorFor(p.id), owe = p.direction === "owe";
+    const extra = Object.entries(s.by).filter(([k, v]) => k !== "KWD" && v.remaining > 0).map(([k, v]) => " + " + fmt(v.remaining, k)).join("");
+    const chip = owe ? `<span class="chip c-rose">You hold</span>` : s.open ? `<span class="chip c-amber">${s.open} open</span>` : `<span class="chip c-green">✓ Settled</span>`;
+    return `<button class="pcard" data-pid="${p.id}" style="animation-delay:${i * 35}ms"><div class="ptop">
+      <div class="av" style="background:${c}22;color:${c}">${initials(p.name)}</div>
+      <div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${chip}</div></div>
+      <div style="text-align:right"><div class="amt num" style="font-size:17px;${owe ? "color:var(--rose)" : s.remaining ? "" : "color:var(--muted)"}">${fmt(s.remaining)} <span style="font-size:12px;color:var(--muted)">KD</span></div>
+      <div class="t2 num">${extra || (owe ? "to give back" : s.remaining ? "remaining" : "all paid")}</div></div></div>
+      ${owe ? "" : `<div class="prog"><i data-w="${(pct * 100).toFixed(1)}%"></i></div><div class="pmeta num"><span>Paid ${fmt(s.paid)} of ${fmt(s.given)}</span><span>${Math.round(pct * 100)}%</span></div>`}</button>`;
+  }).join("") : `<div class="empty"><b>No one here</b>${q ? "Try another search." : "Nothing in this group yet."}</div>`;
+  $("#plist").querySelectorAll(".pcard").forEach(b => b.onclick = () => openPerson(b.dataset.pid));
+  kickBars($("#plist"));
+}
+$("#q").addEventListener("input", renderPeople);
+
+function renderActivity() {
+  const F = [["all", "All"], ["paid", "Payments in"], ["given", "Money out"]];
+  $("#af").innerHTML = F.map(([k, l]) => `<button class="fbtn ${aFilter === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("");
+  $("#af").querySelectorAll("button").forEach(b => b.onclick = () => { aFilter = b.dataset.f; renderActivity(); });
+  const items = [];
+  for (const l of loans) { const p = personById(l.personId); if (!p) continue; for (const t of l.txns || []) if (aFilter === "all" || t.type === aFilter) items.push({ t, l, p }); }
+  items.sort((a, b) => (b.t.date || "").localeCompare(a.t.date || ""));
+  const groups = []; let n = 0;
+  for (const it of items) {
+    if (++n > 300) break;
+    const m = it.t.date ? `${MONTHS[+it.t.date.slice(5, 7) - 1]} ${it.t.date.slice(0, 4)}` : "Undated";
+    if (!groups.length || groups[groups.length - 1].m !== m) groups.push({ m, rows: [] });
+    groups[groups.length - 1].rows.push(it);
+  }
+  const html = groups.map(g => `<div class="mhead">${g.m}</div><div class="card" style="padding:4px 14px;margin-bottom:6px">${g.rows.map(({ t, l, p }) => {
+    const inn = t.type === "paid", good = p.direction === "owe" ? !inn : inn;
+    return `<div class="row" data-pid="${p.id}" style="cursor:pointer"><div class="ico" style="background:${good ? "var(--green-d)" : "var(--blue-d)"};color:${good ? "var(--green)" : "var(--blue)"}">${inn ? "↙" : "↗"}</div>
+      <div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${esc(txnLabel(p.direction, t.type))} · ${esc(l.title)}${t.note ? " · " + esc(t.note) : ""}</div></div>
+      <div style="text-align:right"><div class="amt num" style="color:${inn ? "var(--green)" : "var(--text)"}">${(p.direction === "owe" ? !inn : inn) ? "+" : "−"}${fmt(t.amount, l.currency)}</div><div class="t2">${t.date ? fdate(t.date) : ""}</div></div></div>`;
+  }).join("")}</div>`).join("");
+  $("#alist").innerHTML = html || `<div class="empty"><b>No activity yet</b></div>`;
+  $("#alist").querySelectorAll("[data-pid]").forEach(el => el.onclick = () => openPerson(el.dataset.pid));
+}
+
+
+/* ---------- kept money ---------- */
+function heldAccount(pid) { const ls = loans.filter(l => l.personId === pid && (l.currency || "KWD") === "KWD"); return ls.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null; }
+function heldStats(pid) {
+  let inn = 0, out = 0, last = null; const moves = [];
+  for (const l of loans.filter(l => l.personId === pid)) for (const t of l.txns || []) {
+    if (t.type === "given") inn += +t.amount || 0; else out += +t.amount || 0;
+    moves.push({ t, l }); if (t.date && (!last || t.date > last)) last = t.date;
+  }
+  return { inn: r3(inn), out: r3(out), bal: Math.max(0, r3(inn - out)), last, moves };
+}
+function renderHeld() {
+  const v = $("#v-held"); const hp = people.filter(p => p.direction === "owe");
+  const rows = hp.map(p => ({ p, s: heldStats(p.id) })).sort((a, b) => b.s.bal - a.s.bal);
+  const total = rows.reduce((a, r) => a + r.s.bal, 0);
+  let html = `<div class="hold-hero"><div class="hero-label">Money you're keeping for others</div><div class="big num">${fmt(r3(total))}<small>KD</small></div>
+    <div class="t2" style="white-space:normal">${rows.filter(r => r.s.bal > 0).length} ${rows.filter(r => r.s.bal > 0).length === 1 ? "person" : "people"} · Record money when they send it, and take it out when they ask you to use or return it.</div>
+    <button class="btn" style="margin-top:14px;background:#b48cff;color:#140a26" id="hNew">🔒 Keep money for someone</button></div>`;
+  html += rows.length ? rows.map(({ p, s }, i) => {
+    const tot = s.inn || 1;
+    return `<div class="hcard" style="animation-delay:${i * 40}ms"><div class="ptop" data-pid="${p.id}" style="cursor:pointer">
+      <div class="av" style="background:rgba(180,140,255,.16);color:#c9b0ff">${initials(p.name)}</div>
+      <div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${s.last ? "Last activity " + fdate(s.last) : "No activity yet"}</div></div>
+      <div style="text-align:right"><div class="bal num" style="${s.bal ? "" : "color:var(--muted)"}">${fmt(s.bal)} <span style="font-size:12px;color:var(--muted)">KD</span></div><div class="t2">balance</div></div></div>
+      <div class="flow"><i data-w="${(s.out / tot * 100).toFixed(1)}%" style="background:var(--muted)"></i><i data-w="${(s.bal / tot * 100).toFixed(1)}%" style="background:linear-gradient(90deg,#8b6cf0,#c9b0ff)"></i></div>
+      <div class="pmeta num"><span>Received ${fmt(s.inn)}</span><span>Used / returned ${fmt(s.out)}</span></div>
+      <div class="hbtns"><button class="hb-in" data-hin="${p.id}">＋ Received</button><button class="hb-out" data-hout="${p.id}" ${s.bal ? "" : "disabled style=\"opacity:.45\""}>− Use / return</button></div></div>`;
+  }).join("") : `<div class="empty"><b>No kept money yet</b>Tap the button above when someone sends you money to hold.</div>`;
+  const moves = rows.flatMap(r => r.s.moves.map(m => ({ ...m, p: r.p }))).sort((a, b) => (b.t.date || "").localeCompare(a.t.date || "")).slice(0, 12);
+  if (moves.length) html += `<div class="mhead">Recent movements</div><div class="card" style="padding:4px 14px">${moves.map(({ t, l, p }) => { const inn = t.type === "given";
+    return `<div class="row" data-elid="${l.id}" data-etid="${t.id}" style="cursor:pointer"><div class="ico" style="background:${inn ? "rgba(180,140,255,.16)" : "rgba(255,255,255,.06)"};color:${inn ? "#c9b0ff" : "var(--muted)"}">${inn ? "↙" : "↗"}</div>
+      <div class="grow"><div class="t1">${esc(p.name)}</div><div class="t2">${inn ? "Received to keep" : "Used / given back"}${t.note ? " · " + esc(t.note) : ""}</div></div>
+      <div style="text-align:right"><div class="amt num" style="color:${inn ? "#c9b0ff" : "var(--text)"}">${inn ? "+" : "−"}${fmt(t.amount)}</div><div class="t2">${t.date ? fdate(t.date) : ""} ✎</div></div></div>`; }).join("")}</div>`;
+  v.innerHTML = html;
+  $("#hNew").onclick = () => heldForm({ type: "given" });
+  v.querySelectorAll("[data-hin]").forEach(b => b.onclick = () => heldForm({ personId: b.dataset.hin, type: "given" }));
+  v.querySelectorAll("[data-hout]").forEach(b => b.onclick = () => heldForm({ personId: b.dataset.hout, type: "paid" }));
+  v.querySelectorAll("[data-pid]").forEach(el => el.onclick = () => openPerson(el.dataset.pid));
+  v.querySelectorAll("[data-elid]").forEach(el => el.onclick = () => entryForm(el.dataset.elid, el.dataset.etid));
+  kickBars(v);
+  requestAnimationFrame(() => requestAnimationFrame(() => v.querySelectorAll(".flow i[data-w]").forEach(i => i.style.width = i.dataset.w)));
+}
+function heldForm({ personId, type }) {
+  const hp = people.filter(p => p.direction === "owe");
+  const sel = personId || (hp[0] && hp[0].id) || "__new";
+  openForm(`${head(type === "given" ? "Money received to keep" : "Use or give back")}<form id="ff">
+    <div class="f"><label>Type</label><div class="seg" data-seg="ht" data-val="${type}"><button data-v="given" class="${type === "given" ? "on" : ""}">＋ Received</button><button data-v="paid" class="${type === "paid" ? "on" : ""}">− Use / return</button></div></div>
+    <div class="f"><label>Person</label><select name="pid" id="hPid">${hp.map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.name)}</option>`).join("")}<option value="__new" ${sel === "__new" ? "selected" : ""}>＋ New person…</option></select></div>
+    <div class="f" id="hNameF" style="display:none"><label>Name</label><input name="name" placeholder="e.g. James"></div>
+    <div class="f2"><div class="f"><label>Amount (KD)</label><input name="amount" type="number" step="0.001" min="0" inputmode="decimal" required placeholder="0.000"></div>
+      <div class="f"><label>Date</label><input name="date" type="date" value="${today()}"></div></div>
+    <div id="hHint" class="t2" style="margin:-4px 0 12px;white-space:normal"></div>
+    <div class="f"><label>Note (optional)</label><input name="note" id="hNote"></div>
+    <button class="btn" type="submit" style="background:#b48cff;color:#140a26">Save</button></form>`, root => {
+    segBind(root, "ht");
+    const ps = root.querySelector("#hPid"), nf = root.querySelector("#hNameF"), amt = root.querySelector('[name="amount"]'), hint = root.querySelector("#hHint"), seg = root.querySelector('[data-seg="ht"]'), note = root.querySelector("#hNote");
+    const upd = () => {
+      const isNew = ps.value === "__new", t = seg.dataset.val; nf.style.display = isNew ? "" : "none"; nf.querySelector("input").required = isNew;
+      note.placeholder = t === "given" ? "e.g. Sent by bank transfer" : "e.g. Bought groceries for him / returned cash";
+      const bal = isNew ? 0 : heldStats(ps.value).bal, a = +amt.value || 0, after = t === "given" ? r3(bal + a) : r3(bal - a);
+      hint.innerHTML = `Balance now <b class="num">${fmt(bal)} KD</b> → after this <b class="num" style="color:${after < 0 ? "var(--rose)" : "#c9b0ff"}">${fmt(after)} KD</b>${after < 0 ? " · more than you're holding" : ""}`;
+    };
+    ps.onchange = upd; amt.oninput = upd; seg.addEventListener("change", upd); upd();
+    root.querySelector("#ff").onsubmit = async e => {
+      e.preventDefault(); const fd = new FormData(e.target), t = seg.dataset.val, a = r3(+fd.get("amount"));
+      let pid = ps.value; const bal = pid === "__new" ? 0 : heldStats(pid).bal;
+      if (!(a > 0)) { toast("Enter an amount"); return; }
+      if (t === "paid" && a > bal + 0.0005) { toast(`You only hold ${fmt(bal)} KD`); return; }
+      const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      const tx = { id: uid("t"), type: t, amount: a, date: fd.get("date") || null, note: fd.get("note").trim() };
+      const ok = await safe(async () => {
+        if (pid === "__new") { pid = uid("p"); await db.collection("people").doc(pid).set({ name: fd.get("name").trim(), direction: "owe", note: "Money kept for them", order: people.length }); }
+        const acc = heldAccount(pid);
+        if (acc) await db.collection("loans").doc(acc.id).update({ txns: [...(acc.txns || []), tx], closed: false });
+        else await db.collection("loans").doc(uid("l")).set({ personId: pid, title: "Money kept", currency: "KWD", date: tx.date, note: "", closed: false, createdAt: Date.now(), txns: [tx] });
+      });
+      btn.disabled = false; if (ok) { closeSheet("f"); toast(t === "given" ? "Money recorded" : "Recorded"); }
+    };
+  });
+}
+
+/* ---------- person sheet ---------- */
+function openPerson(id) { curPerson = id; openLoans = new Set(); renderPerson(); showSheet("p"); }
+function renderPerson() {
+  const p = personById(curPerson); if (!p) return;
+  const s = personStats(p.id), owe = p.direction === "owe", c = colorFor(p.id);
+  const pct = s.given ? Math.min(1, s.paid / s.given) : 0;
+  const sorted = s.loans.map(l => ({ l, s: loanStats(l) })).sort((a, b) => (b.l.date || "").localeCompare(a.l.date || ""));
+  const openL = sorted.filter(x => !x.s.closed), closedL = sorted.filter(x => x.s.closed);
+  const extra = Object.entries(s.by).filter(([k, v]) => k !== "KWD" && v.remaining > 0).map(([k, v]) => `<span class="chip c-blue" style="margin-left:6px">+ ${fmt(v.remaining, k)}</span>`).join("");
+  $("#pBody").innerHTML = `
+    <div class="shead"><div style="display:flex;gap:12px;align-items:center;min-width:0"><div class="av" style="background:${c}22;color:${c}">${initials(p.name)}</div><div style="min-width:0"><h2 class="t1">${esc(p.name)}</h2><div class="t2">${owe ? "Money kept for them" : "Owes you"}</div></div></div><button class="x" data-close>✕</button></div>
+    <div class="pd-hero ${owe ? "owe" : ""}">
+      <div class="hero-label">${owe ? "You still hold" : "Still to pay you"}</div>
+      <div class="pd-big num">${fmt(s.remaining)}<small>KD</small>${extra}</div>
+      ${owe ? "" : `<div class="prog"><i data-w="${(pct * 100).toFixed(1)}%"></i></div>`}
+      <div class="mini num"><div><div class="k">${owe ? "Received" : "Lent"}</div><div class="v">${fmt(s.given)}</div></div><div><div class="k">${owe ? "Given back" : "Paid back"}</div><div class="v" style="color:var(--green)">${fmt(s.paid)}</div></div><div><div class="k">Open</div><div class="v">${s.open}</div></div></div>
+      ${p.note ? `<div class="note">${esc(p.note)}</div>` : ""}
+    </div>
+    <div class="acts">${owe ? `<button class="btn" data-a="hin" style="background:#b48cff;color:#140a26">＋ Received</button><button class="btn ghost" data-a="pay" ${s.remaining ? "" : "disabled"}>− Use / return</button>` : `<button class="btn" data-a="pay" ${openL.length ? "" : "disabled"}>💰 Record payment</button><button class="btn ghost" data-a="loan">＋ New loan</button>`}</div>
+    ${openL.length ? `<div class="sec"><span>Open · ${openL.length}</span></div>${openL.map(loanCard).join("")}` : `<div class="empty" style="padding:24px"><b>Nothing open</b>${owe ? "" : "Everything is paid back. 🙌"}</div>`}
+    ${closedL.length ? `<div class="sec"><span>Closed · ${closedL.length}</span></div>${closedL.map(loanCard).join("")}` : ""}
+    <div class="btns" style="margin-top:22px"><button class="btn ghost" data-a="copy">Copy reminder</button><button class="btn ghost" data-a="editp">Edit person</button></div>
+    <button class="btn danger" style="margin-top:8px" data-a="delp">Delete person</button>`;
+  const b = $("#pBody");
+  b.querySelector("[data-close]").onclick = () => closeSheet("p");
+  b.querySelector('[data-a="pay"]').onclick = () => owe ? heldForm({ personId: p.id, type: "paid" }) : txnForm({ personId: p.id, type: "paid" });
+  if (owe) b.querySelector('[data-a="hin"]').onclick = () => heldForm({ personId: p.id, type: "given" }); else b.querySelector('[data-a="loan"]').onclick = () => loanForm({ personId: p.id });
+  b.querySelector('[data-a="editp"]').onclick = () => personForm(p);
+  b.querySelector('[data-a="delp"]').onclick = () => confirmBox(`Delete ${p.name}?`, `This removes ${p.name} and all ${s.loans.length} of their loans and payments. This can't be undone.`, "Delete", async () => {
+    for (const l of s.loans) await db.collection("loans").doc(l.id).delete();
+    await db.collection("people").doc(p.id).delete(); closeSheet("p"); toast("Deleted");
+  });
+  b.querySelector('[data-a="copy"]').onclick = async () => {
+    const lines = openL.map(x => `• ${x.l.title}${x.l.date ? " (" + fdate(x.l.date) + ")" : ""}: ${fmt(x.s.remaining, x.l.currency)} ${x.l.currency === "KWD" || !x.l.currency ? "KD" : ""}`.trim());
+    const txt = `Hi ${p.name.replace(/\s*\(.*\)/, "")}, a quick reminder of what's still pending:\n${lines.join("\n")}\nTotal: ${fmt(s.remaining)} KD${extra ? " (plus " + Object.entries(s.by).filter(([k, v]) => k !== "KWD" && v.remaining > 0).map(([k, v]) => fmt(v.remaining, k)).join(", ") + ")" : ""}\nThank you!`;
+    try { await navigator.clipboard.writeText(txt); toast("Reminder copied"); } catch { toast("Couldn't copy here"); }
+  };
+  b.querySelectorAll(".lhead").forEach(h => h.onclick = () => { const id = h.dataset.lid; const el = h.parentElement; if (openLoans.has(id)) { openLoans.delete(id); el.classList.remove("open"); } else { openLoans.add(id); el.classList.add("open"); } });
+  b.querySelectorAll("[data-la]").forEach(btn => btn.onclick = e => { e.stopPropagation(); loanAction(btn.dataset.la, btn.dataset.lid, btn.dataset.tid); });
+  kickRings(b); kickBars(b);
+}
+function loanCard({ l, s }) {
+  const p = personById(l.personId), owe = p.direction === "owe";
+  const pct = s.given ? Math.min(1, s.paid / s.given) : 0;
+  const col = s.closed ? "var(--green)" : pct > 0 ? "var(--amber)" : "var(--rose)";
+  const cl = curLbl(l.currency || "KWD");
+  const tx = [...(l.txns || [])].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  return `<div class="loan ${openLoans.has(l.id) ? "open" : ""}">
+    <button class="lhead" data-lid="${l.id}"><div class="mring" style="position:relative;width:42px;height:42px">${ringSVG(s.closed ? 1 : pct, 42, 5, col)}<div style="position:absolute;inset:0;display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--muted)">${s.closed ? "✓" : Math.round(pct * 100) + "%"}</div></div>
+      <div class="grow"><div class="t1">${esc(l.title || "Loan")}</div><div class="t2">${l.date ? fdate(l.date) : "No date"}${s.closed ? "" : " · " + age(l.date)} · ${tx.length} entr${tx.length === 1 ? "y" : "ies"}</div></div>
+      <div style="text-align:right">${s.closed ? `<span class="chip c-green">Closed</span><div class="t2 num" style="margin-top:3px">${fmt(s.given, l.currency)} ${cl === "KD" ? "KD" : ""}</div>` : `<div class="amt num">${fmt(s.remaining, l.currency)} <span style="font-size:11px;color:var(--muted)">${cl === "KD" ? "KD" : ""}</span></div><div class="t2 num">of ${fmt(s.given, l.currency)}</div>`}</div></button>
+    <div class="lbody"><div>
+      ${l.note ? `<div class="lnote">📝 ${esc(l.note)}</div>` : ""}
+      <div class="tl">${tx.map(t => `<div class="tli"><span class="d ${t.type === "paid" ? "p" : "g"}"></span><div class="grow"><div style="font-size:13.5px;font-weight:600">${esc(txnLabel(p.direction, t.type))} <span class="num" style="color:${t.type === "paid" ? "var(--green)" : "var(--text)"}">${t.type === "paid" ? (owe ? "−" : "+") : (owe ? "+" : "")}${fmt(t.amount, l.currency)}</span></div><div class="t2" style="white-space:normal">${t.date ? fdate(t.date) : "No date"}${t.note ? " · " + esc(t.note) : ""}</div></div><button class="ed" data-la="edittx" data-lid="${l.id}" data-tid="${t.id}" aria-label="Edit entry">✎</button><button class="del" data-la="deltx" data-lid="${l.id}" data-tid="${t.id}" aria-label="Remove entry">×</button></div>`).join("") || `<div class="t2" style="padding:8px 0">No entries</div>`}</div>
+      <div class="lacts">${s.closed ? "" : `<button class="pri" data-la="pay" data-lid="${l.id}">${owe ? "− Use / return" : "＋ Payment"}</button>`}<button data-la="add" data-lid="${l.id}">＋ ${owe ? "Received" : "Lend more"}</button><button data-la="toggle" data-lid="${l.id}">${l.closed ? "Reopen" : "Mark closed"}</button><button data-la="edit" data-lid="${l.id}">Edit</button><button data-la="del" data-lid="${l.id}" style="color:var(--rose)">Delete</button></div>
+    </div></div></div>`;
+}
+async function loanAction(a, lid, tid) {
+  const l = loans.find(x => x.id === lid); if (!l) return;
+  const ref = db.collection("loans").doc(lid);
+  const isHeld = personById(l.personId)?.direction === "owe";
+  if (a === "pay") isHeld ? heldForm({ personId: l.personId, type: "paid" }) : txnForm({ personId: l.personId, loanId: lid, type: "paid" });
+  else if (a === "add") isHeld ? heldForm({ personId: l.personId, type: "given" }) : txnForm({ personId: l.personId, loanId: lid, type: "given" });
+  else if (a === "edit") loanForm(l);
+  else if (a === "edittx") entryForm(lid, tid);
+  else if (a === "toggle") { await safe(() => ref.update({ closed: !l.closed })); toast(l.closed ? "Reopened" : "Marked closed"); }
+  else if (a === "del") confirmBox("Delete this loan?", `“${l.title}” and all its entries will be removed.`, "Delete", async () => { await ref.delete(); toast("Loan deleted"); });
+  else if (a === "deltx") { const t = (l.txns || []).find(x => x.id === tid); confirmBox("Remove this entry?", `${fmt(t.amount, l.currency)} on ${t.date ? fdate(t.date) : "no date"}`, "Remove", async () => { await ref.update({ txns: l.txns.filter(x => x.id !== tid) }); toast("Entry removed"); }); }
+}
+
+/* ---------- forms ---------- */
+async function safe(fn) { try { await fn(); return true; } catch (e) { toast(e && e.code === "invalid_argument" ? "You can't edit this ledger" : "Couldn't save — try again"); console.error(e); return false; } }
+function openForm(html, bind) { $("#fBody").innerHTML = html; $("#fBody").querySelector("[data-close]")?.addEventListener("click", () => closeSheet("f")); bind($("#fBody")); showSheet("f"); setTimeout(() => $("#fBody").querySelector("input:not([type=date]),select")?.focus({ preventScroll: true }), 420); }
+const head = t => `<div class="shead"><h2>${t}</h2><button class="x" data-close>✕</button></div>`;
+function segBind(root, name) { root.querySelectorAll(`[data-seg="${name}"] button`).forEach(b => b.onclick = e => { e.preventDefault(); b.parentElement.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); b.parentElement.dataset.val = b.dataset.v; b.parentElement.dispatchEvent(new Event("change")); }); }
+
+function personForm(p) {
+  const edit = !!p; p = p || { direction: "owed" };
+  openForm(`${head(edit ? "Edit person" : "New person")}<form id="ff">
+    <div class="f"><label>Name</label><input name="name" required value="${esc(p.name || "")}" placeholder="e.g. Ate Mirna"></div>
+    <div class="f"><label>Direction</label><div class="seg" data-seg="dir" data-val="${p.direction}"><button data-v="owed" class="${p.direction !== "owe" ? "on" : ""}">They owe me</button><button data-v="owe" class="${p.direction === "owe" ? "on" : ""}">I owe / hold</button></div></div>
+    <div class="f"><label>Note (optional)</label><textarea name="note" placeholder="Agreements, promises, reminders…">${esc(p.note || "")}</textarea></div>
+    <button class="btn" type="submit">${edit ? "Save changes" : "Add person"}</button></form>`, root => {
+    segBind(root, "dir");
+    root.querySelector("#ff").onsubmit = async e => { e.preventDefault(); const fd = new FormData(e.target); const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      const data = { name: fd.get("name").trim(), direction: root.querySelector('[data-seg="dir"]').dataset.val, note: fd.get("note").trim() };
+      const id = edit ? p.id : uid("p");
+      const ok = await safe(() => edit ? db.collection("people").doc(id).update(data) : db.collection("people").doc(id).set({ ...data, order: people.length }));
+      btn.disabled = false; if (ok) { closeSheet("f"); toast(edit ? "Saved" : "Person added"); if (!edit) setTimeout(() => openPerson(id), 350); } };
+  });
+}
+
+function loanForm(l) {
+  const edit = !!l.id; const pid = l.personId;
+  const opts = people.map(p => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}</option>`).join("");
+  const firstGiven = edit ? null : true;
+  openForm(`${head(edit ? (personById(pid)?.direction === "owe" ? "Edit kept money" : "Edit loan") : "New loan")}<form id="ff">
+    ${people.length ? "" : `<div class="banner">Add a person first.</div>`}
+    <div class="f"><label>Person</label><select name="personId" ${edit ? "disabled" : ""}>${opts}</select></div>
+    <div class="f"><label>What is it for?</label><input name="title" required value="${esc(l.title || "")}" placeholder="e.g. Plane ticket, Car repair"></div>
+    <div class="f2">${firstGiven ? `<div class="f"><label>Amount</label><input name="amount" type="number" step="0.001" min="0" inputmode="decimal" required placeholder="0.000"></div>` : ""}
+      <div class="f"><label>Currency</label><select name="currency">${["KWD", "PHP", "USD"].map(c => `<option ${((l.currency || "KWD") === c) ? "selected" : ""}>${c}</option>`).join("")}</select></div>
+      <div class="f" ${firstGiven ? 'style="grid-column:1/-1"' : ""}><label>Date</label><input name="date" type="date" value="${esc(l.date || (edit ? "" : today()))}"></div></div>
+    <div class="f"><label>Note (optional)</label><textarea name="note" placeholder="Payment plan, promises…">${esc(l.note || "")}</textarea></div>
+    ${edit && (l.txns || []).length ? `<div class="sec" style="margin-top:6px"><span>Entries · ${l.txns.length}</span></div>${[...l.txns].sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(t => entRow(l, t)).join("")}` : ""}
+    <button class="btn" type="submit" style="margin-top:6px" ${people.length ? "" : "disabled"}>${edit ? "Save changes" : "Add loan"}</button></form>`, root => {
+    root.querySelector("#ff").onsubmit = async e => { e.preventDefault(); const fd = new FormData(e.target); const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      const base = { title: fd.get("title").trim(), currency: fd.get("currency"), date: fd.get("date") || null, note: fd.get("note").trim() };
+      let ok;
+      if (edit) { const cur = loans.find(x => x.id === l.id) || l; const txns = (cur.txns || []).map(t => { const row = root.querySelector(`[data-ent="${t.id}"]`); if (!row) return t;
+          const a = r3(+row.querySelector('[data-k="amount"]').value); return { ...t, amount: a > 0 ? a : t.amount, date: row.querySelector('[data-k="date"]').value || null, note: row.querySelector('[data-k="note"]').value.trim() }; });
+        ok = await safe(() => db.collection("loans").doc(l.id).update({ ...base, txns })); }
+      else { const amt = r3(+fd.get("amount")); const id = uid("l");
+        ok = await safe(() => db.collection("loans").doc(id).set({ ...base, personId: fd.get("personId"), closed: false, createdAt: Date.now(), txns: [{ id: uid("t"), type: "given", amount: amt, date: base.date, note: "" }] })); }
+      btn.disabled = false; if (ok) { closeSheet("f"); toast(edit ? "Saved" : "Loan added"); } };
+  });
+}
+
+function entRow(l, t) {
+  const p = personById(l.personId), paid = t.type === "paid";
+  return `<div class="ent" data-ent="${t.id}"><div class="ent-top"><span style="color:${paid ? "var(--green)" : "var(--blue)"}">${esc(txnLabel(p ? p.direction : "owed", t.type))}</span><span class="t2">${t.date ? fdate(t.date) : "No date"}</span></div>
+    <div class="ent-grid"><input data-k="amount" type="number" step="0.001" min="0" inputmode="decimal" value="${t.amount}" aria-label="Amount"><input data-k="date" type="date" value="${esc(t.date || "")}" aria-label="Date">
+    <input class="full" data-k="note" value="${esc(t.note || "")}" placeholder="Description" aria-label="Description"></div></div>`;
+}
+function entryForm(lid, tid) {
+  const l = loans.find(x => x.id === lid); if (!l) return; const t = (l.txns || []).find(x => x.id === tid); if (!t) return;
+  const p = personById(l.personId), dir = p ? p.direction : "owed";
+  openForm(`${head("Edit entry")}<form id="ff">
+    <div class="t2" style="margin:-6px 0 14px;white-space:normal">${esc(p ? p.name : "")} · ${esc(l.title)}</div>
+    <div class="f"><label>Type</label><div class="seg" data-seg="et" data-val="${t.type}"><button data-v="given" class="${t.type === "given" ? "on" : ""}">${esc(txnLabel(dir, "given"))}</button><button data-v="paid" class="${t.type === "paid" ? "on" : ""}">${esc(txnLabel(dir, "paid"))}</button></div></div>
+    <div class="f"><label>Description</label><input name="note" value="${esc(t.note || "")}" placeholder="What was it for?"></div>
+    <div class="f2"><div class="f"><label>Amount</label><input name="amount" type="number" step="0.001" min="0" inputmode="decimal" required value="${t.amount}"></div>
+      <div class="f"><label>Date</label><input name="date" type="date" value="${esc(t.date || "")}"></div></div>
+    <button class="btn" type="submit">Save</button>
+    <button class="btn danger" type="button" id="entDel" style="margin-top:8px">Delete entry</button></form>`, root => {
+    segBind(root, "et");
+    root.querySelector("#entDel").onclick = () => confirmBox("Remove this entry?", `${fmt(t.amount, l.currency)} on ${t.date ? fdate(t.date) : "no date"}`, "Remove", async () => { const cur = loans.find(x => x.id === lid); await db.collection("loans").doc(lid).update({ txns: cur.txns.filter(x => x.id !== tid) }); toast("Entry removed"); });
+    root.querySelector("#ff").onsubmit = async e => { e.preventDefault(); const fd = new FormData(e.target), a = r3(+fd.get("amount"));
+      if (!(a > 0)) { toast("Enter an amount"); return; }
+      const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      const cur = loans.find(x => x.id === lid);
+      const txns = cur.txns.map(x => x.id === tid ? { ...x, type: root.querySelector('[data-seg="et"]').dataset.val, amount: a, date: fd.get("date") || null, note: fd.get("note").trim() } : x);
+      const ok = await safe(() => db.collection("loans").doc(lid).update({ txns }));
+      btn.disabled = false; if (ok) { closeSheet("f"); toast("Entry updated"); } };
+  });
+}
+
+function txnForm({ personId, loanId, type }) {
+  const owedPeople = people.filter(p => loans.some(l => l.personId === p.id));
+  if (!personId && !owedPeople.length) { toast("Add a loan first"); return; }
+  let pid = personId || (owedPeople.find(p => personStats(p.id).open) || owedPeople[0]).id;
+  const loanOpts = p => { const ls = loans.filter(l => l.personId === p).map(l => ({ l, s: loanStats(l) })).filter(x => type === "given" || !x.s.closed || x.l.id === loanId);
+    return ls.map(({ l, s }) => `<option value="${l.id}" ${l.id === loanId ? "selected" : ""}>${esc(l.title)} — ${s.closed ? "closed" : fmt(s.remaining, l.currency) + " left"}</option>`).join(""); };
+  const p0 = personById(pid);
+  openForm(`${head(type === "paid" ? (p0.direction === "owe" ? "Record payout" : "Record payment") : (p0.direction === "owe" ? "Add received amount" : "Lend more"))}<form id="ff">
+    <div class="f"><label>Person</label><select name="personId" ${personId ? "disabled" : ""}>${owedPeople.map(p => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></div>
+    <div class="f"><label>Loan</label><select name="loanId" id="loanSel">${loanOpts(pid)}</select></div>
+    <div class="f2"><div class="f"><label>Amount</label><input name="amount" type="number" step="0.001" min="0" inputmode="decimal" required placeholder="0.000"></div>
+      <div class="f"><label>Date</label><input name="date" type="date" value="${today()}"></div></div>
+    <div id="hint" class="t2" style="margin:-4px 0 12px;white-space:normal"></div>
+    <div class="f"><label>Note (optional)</label><input name="note" placeholder="e.g. Cash, bank transfer, paid by…"></div>
+    <button class="btn" type="submit">Save</button></form>`, root => {
+    const ps = root.querySelector('[name="personId"]'), ls = root.querySelector("#loanSel"), amt = root.querySelector('[name="amount"]'), hint = root.querySelector("#hint");
+    const upd = () => { const l = loans.find(x => x.id === ls.value); if (!l) { hint.textContent = "No open loans for this person."; return; } const s = loanStats(l);
+      const a = +amt.value || 0; if (type === "paid") { const left = r3(s.remaining - a); hint.innerHTML = left <= 0 && a ? `<span style="color:var(--green)">✓ This will close the loan</span>` : `Remaining after this: <b class="num">${fmt(Math.max(0, left), l.currency)}</b>`; if (!a && s.remaining) hint.innerHTML += ` · <a href="#" id="fill" style="color:var(--green)">Pay full ${fmt(s.remaining, l.currency)}</a>`; root.querySelector("#fill")?.addEventListener("click", e => { e.preventDefault(); amt.value = s.remaining; upd(); }); }
+      else hint.innerHTML = `New total: <b class="num">${fmt(r3(s.given + a), l.currency)}</b>`; };
+    ps.onchange = () => { ls.innerHTML = loanOpts(ps.value); upd(); }; ls.onchange = upd; amt.oninput = upd; upd();
+    root.querySelector("#ff").onsubmit = async e => { e.preventDefault(); const fd = new FormData(e.target); const l = loans.find(x => x.id === ls.value); if (!l) return;
+      const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      const t = { id: uid("t"), type, amount: r3(+fd.get("amount")), date: fd.get("date") || null, note: fd.get("note").trim() };
+      const ok = await safe(() => db.collection("loans").doc(l.id).update({ txns: [...(l.txns || []), t] }));
+      btn.disabled = false; if (ok) { closeSheet("f"); openLoans.add(l.id); const s = loanStats({ ...l, txns: [...l.txns, t] }); toast(type === "paid" ? (s.closed ? "🎉 Paid off!" : "Payment recorded") : "Amount added"); } };
+  });
+}
+
+function confirmBox(title, msg, okLbl, fn) {
+  openForm(`${head(esc(title))}<p style="color:var(--muted);margin:0 0 18px">${esc(msg)}</p><div class="btns"><button class="btn ghost" data-close2>Cancel</button><button class="btn danger" id="okb">${okLbl}</button></div>`, root => {
+    root.querySelector("[data-close2]").onclick = () => closeSheet("f");
+    root.querySelector("#okb").onclick = async () => { const b = root.querySelector("#okb"); b.disabled = true; const ok = await safe(fn); if (ok) closeSheet("f"); b.disabled = false; };
+  });
+}
+
+/* ---------- sheets ---------- */
+const sheets = { p: "#pSheet", f: "#fSheet" }, openS = new Set();
+function showSheet(k) { openS.add(k); $(sheets[k]).classList.add("on"); $("#scrim").classList.add("on"); document.body.style.overflow = "hidden"; }
+function closeSheet(k) { openS.delete(k); $(sheets[k]).classList.remove("on"); if (k === "p") curPerson = null; if (!openS.size) { $("#scrim").classList.remove("on"); document.body.style.overflow = ""; } }
+$("#scrim").onclick = () => { if (openS.has("f")) closeSheet("f"); else if (openS.has("p")) closeSheet("p"); };
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("#scrim").onclick(); });
+// swipe down to close
+for (const k of ["p", "f"]) { const s = $(sheets[k]); let y0 = null, dy = 0; const body = s.querySelector(".sbody");
+  s.addEventListener("touchstart", e => { if (body.scrollTop > 0 && !e.target.closest(".grab")) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, { passive: true });
+  s.addEventListener("touchmove", e => { if (y0 == null) return; dy = e.touches[0].clientY - y0; if (dy > 0) { s.style.transition = "none"; s.style.transform = `translateY(${dy}px)`; } }, { passive: true });
+  s.addEventListener("touchend", () => { if (y0 == null) return; s.style.transition = ""; s.style.transform = ""; if (dy > 110) closeSheet(k); y0 = null; });
+}
+
+/* ---------- tabs ---------- */
+function setTab(v) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.v === v));
+  document.querySelectorAll(".view").forEach(s => s.classList.toggle("on", s.id === "v-" + v));
+  const t = document.querySelector(`.tab[data-v="${v}"]`), ind = $("#tabInd");
+  ind.style.width = t.offsetWidth + "px"; ind.style.transform = `translateX(${t.offsetLeft}px)`;
+  if (v === "held") kickBars($("#v-held")); if (v === "overview") kickBars($("#v-overview")); if (v === "people") kickBars($("#plist"));
+  if (location.hash.slice(1) !== v) try { history.replaceState(null, "", "#" + v); } catch {}
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { setTab(t.dataset.v); window.scrollTo({ top: Math.min(window.scrollY, $(".hero").offsetHeight), behavior: "smooth" }); });
+window.addEventListener("resize", () => setTab(document.querySelector(".tab.on").dataset.v));
+window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (["overview", "people", "held", "activity"].includes(h)) setTab(h); });
+
+$("#sOweBox").onclick = () => { setTab("held"); window.scrollTo({ top: $(".hero").offsetHeight, behavior: "smooth" }); };
+/* ---------- fab ---------- */
+const fab = $("#fab"), fm = $("#fmenu");
+fab.onclick = () => { if (!db) { toast("Not connected"); return; } fab.classList.toggle("open"); fm.classList.toggle("open"); };
+fm.querySelectorAll("button").forEach(b => b.onclick = () => { fab.classList.remove("open"); fm.classList.remove("open");
+  const a = b.dataset.a; if (a === "keep") heldForm({ type: "given" }); else if (a === "person") personForm(); else if (a === "loan") loanForm({ personId: curPerson || (people[0] && people[0].id) }); else txnForm({ personId: curPerson || null, type: "paid" }); });
+document.addEventListener("click", e => { if (!e.target.closest("#fab,#fmenu")) { fab.classList.remove("open"); fm.classList.remove("open"); } });
+
+/* ---------- backup / restore ---------- */
+function backupData() {
+  return { app: "loan-ledger", version: 1, exportedAt: new Date().toISOString(),
+    people: people.map(p => ({ ...p })), loans: loans.map(l => ({ ...l, txns: (l.txns || []).map(t => ({ ...t })) })) };
+}
+function bkName() { return "loan-ledger-backup-" + new Date().toISOString().slice(0, 10) + ".json"; }
+function parseBackup(txt) {
+  const d = JSON.parse(txt);
+  if (!d || d.app !== "loan-ledger" || !Array.isArray(d.people) || !Array.isArray(d.loans)) throw new Error("bad");
+  return d;
+}
+async function restoreBackup(d) {
+  for (const l of loans) await db.collection("loans").doc(l.id).delete();
+  for (const p of people) await db.collection("people").doc(p.id).delete();
+  for (const p of d.people) { const { id, ...r } = p; await db.collection("people").doc(id).set(r); }
+  for (const l of d.loans) { const { id, ...r } = l; await db.collection("loans").doc(id).set(r); }
+}
+function backupSheet() {
+  if (!db) { toast("Not connected"); return; }
+  const json = JSON.stringify(backupData(), null, 1);
+  const n = people.length, m = loans.length;
+  const LM = typeof LOCAL_MODE !== "undefined" && LOCAL_MODE;
+  const last = (typeof LOCAL_MODE !== "undefined" && LOCAL_MODE) ? localStorage.getItem("ll.lastBackup") : null;
+  openForm(`${head("Backup &amp; restore")}
+    <p style="color:var(--muted);margin:0 0 14px;font-size:14px">${n} people · ${m} loans. A backup is one file holding everything. Keep a copy somewhere safe${typeof LOCAL_MODE !== "undefined" && LOCAL_MODE ? `.<br><b style="color:var(--text)">Last backup:</b> ${last ? fdate(last.slice(0, 10)) : "never"}` : ", or copy it to move your data into the offline app."}</p>
+    <div class="btns" style="flex-direction:column;gap:10px">
+      ${LM ? `<button class="btn" id="bkDl">⬇︎ Save backup file</button>
+      <button class="btn ghost" id="bkShare">↗ Share backup…</button>` : ""}
+      <button class="btn ${LM ? "ghost" : ""}" id="bkCopy">⧉ Copy backup text</button>
+    </div>
+    <div style="height:1px;background:var(--line2);margin:20px 0"></div>
+    <div class="f"><label>Restore from a backup</label>
+      <input type="file" id="bkFile" accept=".json,application/json,text/plain" style="display:none">
+      <button class="btn ghost" id="bkPick">📂 Choose backup file</button></div>
+    <div class="f"><label>…or paste backup text</label><textarea id="bkTxt" placeholder='Paste the copied backup here' style="min-height:80px;font-family:ui-monospace,monospace;font-size:12px"></textarea></div>
+    <button class="btn danger" id="bkRestore">Restore — replaces everything here</button>`, root => {
+    const mark = () => { try { localStorage.setItem("ll.lastBackup", new Date().toISOString()); } catch {} };
+    if (LM) root.querySelector("#bkDl").onclick = () => {
+      try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = bkName(); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); mark(); toast("Backup saved to Downloads"); }
+      catch { toast("Saving isn't allowed here — use Share or Copy"); }
+    };
+    if (LM) root.querySelector("#bkShare").onclick = async () => {
+      try { const f = new File([json], bkName(), { type: "application/json" });
+        if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: "Loan Ledger backup" }); mark(); }
+        else toast("Sharing isn't available here — use Save or Copy"); }
+      catch (e) { if (e && e.name !== "AbortError") toast("Sharing isn't available here — use Copy"); }
+    };
+    root.querySelector("#bkCopy").onclick = async () => {
+      try { await navigator.clipboard.writeText(json); mark(); toast("Backup copied"); }
+      catch { const t = root.querySelector("#bkTxt"); t.value = json; t.focus(); t.select(); toast("Select all and copy the text below"); }
+    };
+    const fi = root.querySelector("#bkFile");
+    root.querySelector("#bkPick").onclick = () => fi.click();
+    fi.onchange = async () => { const f = fi.files[0]; if (!f) return; root.querySelector("#bkTxt").value = await f.text(); toast("File loaded — tap Restore"); };
+    root.querySelector("#bkRestore").onclick = () => {
+      let d; try { d = parseBackup(root.querySelector("#bkTxt").value.trim()); } catch { toast("That isn't a Loan Ledger backup"); return; }
+      confirmBox("Replace everything with this backup?", `${d.people.length} people and ${d.loans.length} loans from ${fdate(d.exportedAt.slice(0, 10))}. What's here now will be replaced.`, "Restore", async () => { await restoreBackup(d); toast("Backup restored"); });
+    };
+  });
+}
+$("#bkBtn").onclick = backupSheet;
+
+/* ---------- boot ---------- */
+const h0 = location.hash.slice(1); requestAnimationFrame(() => setTab(["overview", "people", "held", "activity"].includes(h0) ? h0 : "overview"));
+function stateMsg(html) { const s = $("#stateBox"); s.style.display = ""; s.innerHTML = html; }
+const timer = setTimeout(() => { if (!(gotP && gotL)) stateMsg(`<b style="color:var(--text)">Can't reach your data yet</b><br>Check your connection — it will appear as soon as it loads.`); }, 10000);
+(async () => {
+  try { db = window.claude && await window.claude.use("db"); } catch { db = null; }
+  if (!db) { clearTimeout(timer); stateMsg(`<b style="color:var(--text)">Sign in to see your ledger</b><br>Open this page while signed in to claude.ai.`); $("#hSub").textContent = "Not connected"; return; }
+  const onErr = e => { clearTimeout(timer); stateMsg(`<b style="color:var(--text)">Your ledger isn't available here</b><br>${e && e.code === "revoked" ? "Access changed — reopen the page." : "Please reopen the page in a moment."}`); };
+  const done = snap => { if (!snap.metadata.fromCache && gotP && gotL) { clearTimeout(timer); } };
+  db.collection("people").onSnapshot(snap => { people = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); gotP = true; done(snap); renderAll(); }, onErr);
+  db.collection("loans").onSnapshot(snap => { loans = snap.docs.map(d => ({ id: d.id, ...d.data(), txns: [...(d.data().txns || [])] })); gotL = true; done(snap); renderAll(); }, onErr);
+  setTimeout(() => {
+    if (!people.length && !loans.length) { $("#stateBox").style.display = "none"; toast("Welcome! Restore a backup to bring in your records"); backupSheet(); return; }
+    const lb = localStorage.getItem("ll.lastBackup");
+    if (!lb || Date.now() - Date.parse(lb) > 14 * 864e5) toast("Tip: save a backup — it's been a while");
+  }, 700);
+})();
+})();
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
